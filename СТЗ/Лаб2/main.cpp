@@ -26,6 +26,9 @@
 #include "opencv2/imgproc.hpp"
 #include <iostream>
 #include "gauss_blur.h"
+#include  <stdlib.h>
+#include   <ctime>
+#include <math.h>
 
 using namespace std;
 using namespace cv;
@@ -35,32 +38,90 @@ using namespace cv;
 
 int main()
 {
+    setlocale(LC_ALL, "Russian");
+
+    float sigma = 1;
+
     //создание класса
-    gauss_blur gauss(1);
+    gauss_blur gauss(sigma);
 
     //считываем картинку и создаем пустое изображение того же размера 
-    Mat image = imread("cub2.bmp");
-    Mat test(image.size(), image.type(), Scalar(0, 0, 0));
+    Mat image = imread("1400x1000.jpg", IMREAD_GRAYSCALE);
 
+    cout << image.channels() << endl;
+    cout << image.rows << endl;
+    cout << image.cols << endl;
+
+    Mat test(image.size(), image.type());
+
+    unsigned int start_time = clock();
     //вызов моей функции
-    gauss.gaussBlur(image, test, 1);
-   
+    gauss.gaussBlur(image, test, sigma);
+    unsigned int end_time = clock();
+    unsigned int search_time = end_time - start_time;
+
+    //вывод времени в секундах
+    cout << '\n' << "my function =   " << (float)search_time / CLOCKS_PER_SEC;
+
+    unsigned int start_time2 = clock();
     Mat testImage;
     //вызов библиотечной
-    GaussianBlur(image, testImage, Size(5, 5), 1, 1, 0);
+    GaussianBlur(image, testImage, Size(5, 5), sigma, sigma, 3);
+    unsigned int end_time2 = clock();
+    unsigned int search_time2 = end_time2 - start_time2;
+
+    cout << '\n' << "lib function =   " << (float)search_time2 / CLOCKS_PER_SEC << "\n"; 
     Mat rez;
 
-    //рахница между моей и библиотечной
+
+    //разница между моей и библиотечной
     absdiff(testImage, test, rez);
 
-    imshow("image", image);
-    imshow("test", test);
-    imshow("testImage", testImage);
-    imshow("rez", rez);
-    while (waitKey(25) != 27)
+    //Расчет среднеквадратичного отклонения
+    double noNull = 0;
+    double firstCof = 0;
+    for (int i = 0; i < rez.rows; i++)
     {
-        ;
+        for (int j = 0; j < rez.cols; j++)
+        {
+            noNull = noNull + rez.at<Vec<uint8_t, 1>>(i, j)[0];
+        }
     }
+
+    uint32_t rezRows = rez.rows;
+    uint32_t rezCols = rez.cols;
+    uint32_t sumPixel = rezRows * rezCols;
+    uint64_t sumPixel1 = (sumPixel - 1);
+    double Xcp = noNull / (sumPixel);
+
+    for (int i = 0; i < rez.rows; i++)
+    {
+        for (int j = 0; j < rez.cols; j++)
+        {
+
+            firstCof = firstCof + (rez.at<Vec<uint8_t, 1>>(i, j)[0] - Xcp) * (rez.at<Vec<uint8_t, 1>>(i, j)[0] - Xcp);
+            
+        }
+    }
+
+    cout << "firstCof  = " << firstCof << endl;
+
+    double S = sqrt(firstCof / (sumPixel1));
+
+
+    cout << "средняя интенсивность = " << Xcp << endl;
+    cout << "Количество всех пикселей = " << rezRows * rezCols << endl;
+    cout << "Отклоненние = " << S << endl;
+
+    //imshow("input image", image);
+    //imshow("my image", test);
+    //imshow("function image", testImage);
+    //imshow("absdiff", rez);
+
+    //while (waitKey(25) != 27)
+    //{
+       // ;
+   // }
 
 
 

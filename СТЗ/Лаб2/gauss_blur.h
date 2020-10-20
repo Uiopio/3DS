@@ -6,7 +6,6 @@
 #include "opencv2/imgproc.hpp"
 #include <iostream>
 
-#define EXP 2.7182
 
 using namespace std;
 using namespace cv;
