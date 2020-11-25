@@ -7,21 +7,25 @@ using namespace std;
 using namespace cv;
 
 
-
+//Часть 1
 void part1(Mat inputImage)
 {
+	//Пороговая фильтрация для удаления всего лищнего
     Mat temp;
     threshold(inputImage, temp, 220, 255, THRESH_BINARY);
     erode(temp, temp, getStructuringElement(MORPH_RECT, Size(3, 3)));
     dilate(temp, temp, getStructuringElement(MORPH_RECT, Size(3, 3)));
 
+	//СОздание контуров на основе полученной маски
     Mat edges;
     Canny(temp, edges, 0, 0, 3, false);
 
+	//Назождение созданных контуров
     Mat image = edges.clone();
     vector<vector<Point>> cnts;
     findContours(image, cnts, RETR_EXTERNAL, CHAIN_APPROX_NONE);
 
+	//Назождение центра
     Moments mnts = moments(cnts[0]);
     double m00 = mnts.m00;
     double m10 = mnts.m10;
@@ -31,9 +35,11 @@ void part1(Mat inputImage)
     center.x = m10 / m00;
     center.y = m01 / m00;
 
+	//Делаю трехканальным, чтобы прицел был цветным
     Mat out;
     cvtColor(inputImage, out, COLOR_GRAY2BGR);
 
+	//Рисую прямоугольник
     rectangle(out, Rect(center.x - 2, center.y - 20, 4, 40), Scalar(0, 0, 255), FILLED, 8, 0);
     rectangle(out, Rect(center.x - 20, center.y - 2, 40, 4), Scalar(0, 0, 255), FILLED, 8, 0);
 
@@ -45,6 +51,7 @@ void part1(Mat inputImage)
 
 void part2(Mat imputImage)
 {
+	//Пороговая фильтрация для цветногого изображения
     Mat temp;
     inRange(imputImage, Scalar(34, 101, 0), Scalar(164, 255, 255), temp);
 
