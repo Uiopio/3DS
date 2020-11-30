@@ -26,13 +26,8 @@ TIMER_SEC = 10
 font = ImageFont.truetype("arial.ttf", 30)
 
 
-pipeline_str = "v4l2src device=/dev/video0 ! video/x-raw, width=640, height=480, framerate=10/1 ! \
-                                rsvgoverlay name=overlay ! v4l2h264enc ! rtph264pay name=pay0 pt=96"
-
-pipeline_str2 = "v4l2src device=/dev/video0 ! video/x-raw, width=640, height=480, framerate=10/1, pixel-aspect-ratio=1/1 ! \
+piplineRtspEduBot = "v4l2src device=/dev/video0 ! video/x-raw, width=320, height=240, framerate=10/1, pixel-aspect-ratio=1/1 ! \
                                 gdkpixbufoverlay location=battery.png offset-x=0 offset-y=0 overlay-height=40 overlay-width=40 ! v4l2h264enc ! rtph264pay name=pay0 pt=96"
-
-pipeline_str3 = "v4l2src device=/dev/video0 ! video/x-raw, width=640, height=480, framerate=10/1 ! v4l2h264enc ! rtph264pay name=pay0 pt=96"
 
 
 class PotatoCamFactory(GstRtspServer.RTSPMediaFactory):
@@ -41,7 +36,7 @@ class PotatoCamFactory(GstRtspServer.RTSPMediaFactory):
 
     def do_create_element(self, url):
         pipeline_str = "v4l2src device=/dev/video0 ! video/x-raw, width=320, height=240, framerate=10/1, pixel-aspect-ratio=1/1 !\
-                                 rsvgoverlay name=overlay ! v4l2h264enc ! rtph264pay name=pay0 pt=96"
+                                 ! videoconvert ! rsvgoverlay name=overlay ! videoconvert ! v4l2h264enc ! rtph264pay name=pay0 pt=96"
         pipeline = Gst.parse_launch(pipeline_str)
         overlay = pipeline.get_by_name('overlay')
         self.thread = MyThread(overlay)
