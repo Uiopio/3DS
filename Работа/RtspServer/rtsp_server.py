@@ -25,7 +25,7 @@ FSIZE = '30px'
 TIMER_SEC = 10
 font = ImageFont.truetype("arial.ttf", 30)
 
-
+# старый пайплайн (работает)
 piplineRtspEduBot = "v4l2src device=/dev/video0 ! video/x-raw, width=320, height=240, framerate=10/1, pixel-aspect-ratio=1/1 ! \
                                 gdkpixbufoverlay location=battery.png offset-x=0 offset-y=0 overlay-height=40 overlay-width=40 ! v4l2h264enc ! rtph264pay name=pay0 pt=96"
 
@@ -37,15 +37,15 @@ class PotatoCamFactory(GstRtspServer.RTSPMediaFactory):
     def do_create_element(self, url):
         pipeline_str = "v4l2src device=/dev/video0 ! video/x-raw, width=320, height=240, framerate=10/1, pixel-aspect-ratio=1/1 !\
                                  ! videoconvert ! rsvgoverlay name=overlay ! videoconvert ! v4l2h264enc ! rtph264pay name=pay0 pt=96"
-        pipeline = Gst.parse_launch(pipeline_str)
-        overlay = pipeline.get_by_name('overlay')
-        self.thread = MyThread(overlay)
+        pipeline = Gst.parse_launch(pipeline_str) # Создание пайплайна
+        overlay = pipeline.get_by_name('overlay') # поиск оверлея
+        self.thread = MyThread(overlay) # создание svg
         self.thread.start()
         print(pipeline_str)
         return pipeline
 
 
-
+# рисует на экране секунды
 class MyThread(threading.Thread):
     def __init__(self, overlay):
         threading.Thread.__init__(self)
@@ -56,28 +56,12 @@ class MyThread(threading.Thread):
         print("MyThread_Run")
         p = 0
         while p < 901:
-            # overlay = self.pipeline.get_by_name('overlay')
             svg_canvas = svgwrite.Drawing('test.svg', size=(W, H))
             svg_canvas.add(svg_canvas.text(p, insert=(50, 50), font_size='40px', fill='red', font_family=FONT))
             self.overlay.set_property('data', svg_canvas.tostring())
             p = p + 1
             time.sleep(1)
 
-"""
-class test(threading.Thread):
-    def __init__(self, overlay):
-        threading.Thread.__init__(self)
-        self.overlay = overlay
-        print("MyThread_Init")
-
-    def run(self):
-        print("MyThread_Run")
-        p = 0
-        while p < self.overlay:
-            p = p + 1
-            print(p)
-            time.sleep(1)
-"""
 
 # Порт: 5554. Камера: potato.
 class PotatoServer():
