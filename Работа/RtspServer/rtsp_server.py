@@ -36,7 +36,7 @@ class PotatoCamFactory(GstRtspServer.RTSPMediaFactory):
 
     def do_create_element(self, url):
         pipeline_str = "v4l2src device=/dev/video0 ! video/x-raw, width=320, height=240, framerate=10/1, pixel-aspect-ratio=1/1 !\
-                                 ! videoconvert ! rsvgoverlay name=overlay ! videoconvert ! v4l2h264enc ! rtph264pay name=pay0 pt=96"
+                                  videoconvert ! rsvgoverlay name=overlay ! videoconvert ! v4l2h264enc ! rtph264pay name=pay0 pt=96"
         pipeline = Gst.parse_launch(pipeline_str) # Создание пайплайна
         overlay = pipeline.get_by_name('overlay') # поиск оверлея
         self.thread = MyThread(overlay) # создание svg
