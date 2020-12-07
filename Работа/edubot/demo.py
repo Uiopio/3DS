@@ -1,7 +1,7 @@
 import threading
 import smbus
 import time
-from edubot import EduBot
+from edubot import EduBot, MotorMode, Direction, Registers
 
 if __name__ == "__main__":
     bus = smbus.SMBus(1)
