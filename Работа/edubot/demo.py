@@ -10,17 +10,17 @@ if __name__ == "__main__":
     print(bot.whoIam())
     bot.setMotorMode(MotorMode.MOTOR_MODE_PID)
 
-    # движение вперед в течении 5 секунд
+    # движение вперед в течении 3 секунд
     bot.setParrot0(-45)
     bot.setParrot1(45)
     time.sleep(3)
 
-    # Разворот вокруг оси
+    # Поворот в течении 2 секунд
     bot.setParrot0(30)
     bot.setParrot1(30)
     time.sleep(2)
 
-    # Разворот вокруг оси
+    # Поворот в течении 2 секунд
     bot.setParrot0(-30)
     bot.setParrot1(-30)
     time.sleep(2)
