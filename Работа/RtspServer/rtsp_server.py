@@ -28,39 +28,54 @@ font = ImageFont.truetype("arial.ttf", 30)
 # старый пайплайн (работает)
 piplineRtspEduBot = "v4l2src device=/dev/video0 ! video/x-raw, width=320, height=240, framerate=10/1, pixel-aspect-ratio=1/1 ! \
                                 gdkpixbufoverlay location=battery.png offset-x=0 offset-y=0 overlay-height=40 overlay-width=40 ! v4l2h264enc ! rtph264pay name=pay0 pt=96"
+pipline2 = " v4l2src device=/dev/video0 ! video/x-raw, width=640, height=480 ! videoconvert ! \
+                                          rsvgoverlay location=test.svg ! videoconvert ! xvimagesink alsasrc device=plughw:CARD=2,DEV=0 ! audioconvert ! autoaudiosink "
+"""xvimagesink"""
 
+""" videotestsrc pattern=smpte ! video/x-raw, width=640, height=480, framerate=30/1 ! autovideoconvert ! rsvgoverlay name=overlay ! autovideoconvert ! x264enc ! rtph264pay name=pay0 pt=96 """
 
 class PotatoCamFactory(GstRtspServer.RTSPMediaFactory):
     def __init__(self):
         GstRtspServer.RTSPMediaFactory.__init__(self)
-
+        self.overlay = None
+        self.isStarted = False
     def do_create_element(self, url):
-        pipeline_str = "v4l2src device=/dev/video0 ! video/x-raw, width=320, height=240, framerate=10/1, pixel-aspect-ratio=1/1 !\
-                                  videoconvert ! rsvgoverlay name=overlay ! videoconvert ! v4l2h264enc ! rtph264pay name=pay0 pt=96"
+        #pipeline_str = "v4l2src device=/dev/video0 ! video/x-raw, width=640, height=480 ! autovideoconvert !\
+        #                          rsvgoverlay location=test.svg ! autovideoconvert ! x264enc ! rtph264pay name=pay0 pt=96"
+
+        pipeline_str = "v4l2src device=/dev/video0 ! video/x-raw, format = YUY2, width=640, height=480, framerate=15/1 ! videoconvert ! rsvgoverlay name=overlay ! videoconvert ! x264enc ! video/x-h264,profile=main ! rtph264pay name=pay0 pt=96"
         pipeline = Gst.parse_launch(pipeline_str) # Создание пайплайна
-        overlay = pipeline.get_by_name('overlay') # поиск оверлея
-        self.thread = MyThread(overlay) # создание svg
-        self.thread.start()
+        self.overlay = pipeline.get_by_name('overlay') # поиск оверлея
+        self.isStarted = True
+        print("isStarted = True")
         print(pipeline_str)
         return pipeline
 
 
 # рисует на экране секунды
 class MyThread(threading.Thread):
-    def __init__(self, overlay):
+    def __init__(self, server):
         threading.Thread.__init__(self)
-        self.overlay = overlay
+        self.server = server
         print("MyThread_Init")
 
     def run(self):
-        print("MyThread_Run")
-        p = 0
-        while p < 901:
-            svg_canvas = svgwrite.Drawing('test.svg', size=(W, H))
-            svg_canvas.add(svg_canvas.text(p, insert=(50, 50), font_size='40px', fill='red', font_family=FONT))
-            self.overlay.set_property('data', svg_canvas.tostring())
-            p = p + 1
-            time.sleep(1)
+        flag = False
+        while flag == False:
+            if (self.server.potatoCam.isStarted) and (flag == False):
+                overlay = self.server.potatoCam.overlay
+                flag = True
+                print("MyThread_Run")
+                p = 0
+                while p < 120:
+                    #print("p: ")
+                    #print(p)
+                    svg_canvas = svgwrite.Drawing('test.svg', size=(W, H))
+                    svg_canvas.add(svg_canvas.text(p, insert=(50, 50), font_size='40px', fill='red', font_family=FONT))
+                    overlay.set_property('data', svg_canvas.tostring())
+                    p = p + 1
+                    time.sleep(1)
+
 
 
 # Порт: 5554. Камера: potato.
@@ -69,11 +84,11 @@ class PotatoServer():
         self.PotatoServer = GstRtspServer.RTSPServer.new()
         self.PotatoServer.set_service('5554')
 
-        potatoCam = PotatoCamFactory()
-        potatoCam.set_shared(True)
+        self.potatoCam = PotatoCamFactory()
+        self.potatoCam.set_shared(True)
 
         m = self.PotatoServer.get_mount_points()
-        m.add_factory("/potato", potatoCam)
+        m.add_factory("/potato", self.potatoCam)
 
         self.PotatoServer.attach(None)
 
@@ -82,9 +97,11 @@ class PotatoServer():
 
 
 if __name__ == '__main__':
-
     print(4)
     s1 = PotatoServer()
+
+    thread = MyThread(s1)  # создание svg
+    thread.start()
 
     loop.run()
     print(6)
