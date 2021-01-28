@@ -1,0 +1,5 @@
+{
+  "can_interface": "can0",
+  "port": 9009,
+  "videodevice": "/dev/video0"
+}

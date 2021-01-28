@@ -1,0 +1,14 @@
+[Unit]
+Description=Johny server
+After=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/pult/GitHub/Johny/autorun.sh
+WorkingDirectory=/home/pult/GitHub/Johny
+
+User=pult
+Group=dialout
+
+[Install]
+WantedBy=multi-user.target
