@@ -9,7 +9,7 @@ import cv2
 #######################
 """Параметры Пионера"""
 #######################
-# начальные координаты(при взлете)
+# начальные координаты(при взлете) в метрах
 x = float(0)
 y = float(0)
 z = float(1)
@@ -35,10 +35,10 @@ H = 480  # высота экрана
 ###########################
 """Инициализация Пионера"""
 ###########################
-pioneer_mini = Pioneer()
+pioneer_mini = Pioneer() # инициализируем пионера
 print('start')
-pioneer_mini.arm()
-pioneer_mini.takeoff()
+pioneer_mini.arm() # запуск моторов
+pioneer_mini.takeoff() # предстартовые проверки
 
 
 pygame.init() # Иницилизация пугейм
@@ -56,43 +56,95 @@ clock = pygame.time.Clock()
 joystick_count = pygame.joystick.get_count()
 ps4 = None
 cobra = None
+xBox = None
+
 
 # Выдача джойстикам соответствующих индексов
 for i in range (joystick_count):
     joystick = pygame.joystick.Joystick(i)
+    print(joystick.get_name())
     if joystick.get_name() == "PS4 Controller":
         ps4 = i
     if joystick.get_name() == "Defender COBRA M5 USB Joystick":
         cobra = i
+    if joystick.get_name() == "Xbox 360 Controller":
+        xBox = i
 
 
 
 if ps4 != None:
     joystick0 = pygame.joystick.Joystick(ps4)  # создаем объект джойстик
     joystick0.init()  # инициализируем джойстик
-    print('Enabled joystick0: ' + joystick0.get_name())
+    print('Джойстик 0 подключен: ' + joystick0.get_name())
 
-else: print("Джойстик не найден1")
+else: print("Джойстик не найден")
 
 
 if cobra != None:
     joystick1 = pygame.joystick.Joystick(cobra)  # создаем объект джойстик
     joystick1.init()  # инициализируем джойстик
-    print('Enabled joystick1: ' + joystick1.get_name())
+    print('Джойстик 1 подключен: ' + joystick1.get_name())
+
+else: print("Джойстик не найден")
+
+if xBox != None:
+    joystick2 = pygame.joystick.Joystick(xBox)  # создаем объект джойстик
+    joystick2.init()  # инициализируем джойстик
+    print('Джойстик 2 подключен: ' + joystick2.get_name())
 
 else: print("Джойстик не найден")
 
 
 
-# получение знака оси
-def sign(num):
-    return 1 if num > 0 else -1
+
+########################
+"""Обработка Xbox 360"""
+########################
+thresholdPS4 = 0.2 # Определяет зону чувствительности стиков: от (-1 ; -thresholdPS4) и (thresholdPS4 ; 1)
+
+def joyMotion2(x, y, z, yaw):
+    axis1 = joystick2.get_axis(1)
+    axis2 = joystick2.get_axis(2)
+    global new_command
+
+    #  левый стик, движение взад вперед
+    if (axis1 > thresholdPS4) or (axis1 < -thresholdPS4):
+        x += increment_xy * axis1 * math.sin(yaw)
+        y += increment_xy * -axis1 * math.cos(yaw)
+        new_command = True
+
+    #  правый стик, движение влво вправо
+    elif (axis2 > thresholdPS4) or (axis2 < -thresholdPS4):
+        x -= increment_xy * axis2 * math.cos(yaw)
+        y += increment_xy * axis2 * math.sin(yaw)
+        new_command = True
+
+    hat = joystick2.get_hat(0)
+
+    if hat[1] > 0:
+        z += increment_z
+        new_command = True
+
+    elif hat[1] < 0:
+        z -= increment_z
+        new_command = True
+
+    elif hat[0] > 0:
+        yaw -= increment_deg
+        new_command = True
+
+    elif hat[0] < 0:
+        yaw += increment_deg
+        new_command = True
+
+    return x, y, z, yaw
 
 
 ###################
 """Обработка ps4"""
 ###################
-thresholdPS4 = 0.4
+thresholdPS4 = 0.2 # Определяет зону чувствительности стиков: от (-1 ; -thresholdPS4) и (thresholdPS4 ; 1)
+
 def joyMotion0(x, y, z, yaw):
     axis1 = joystick0.get_axis(1)
     axis2 = joystick0.get_axis(2)
@@ -146,7 +198,6 @@ def joyMotion1(x, y, z, yaw):
     if (axis0 > threshold) or (axis0 < -threshold):
         x += increment_xy * axis0 * math.sin(yaw)
         y += increment_xy * -axis0 * math.cos(yaw)
-        #print(increment_xy * axis0)
         new_command = True
 
 
@@ -154,14 +205,12 @@ def joyMotion1(x, y, z, yaw):
     elif (axis1 > threshold) or (axis1 < -threshold):
         x -= increment_xy * axis1 * math.cos(yaw)
         y += increment_xy * axis1 * math.sin(yaw)
-        #print(increment_xy * axis1)
         new_command = True
 
 
     # Обработка разворота
     elif (axis2 > threshold) or (axis2 < -threshold):
         yaw += increment_deg * -axis2
-        #print(increment_deg * axis2)
         new_command = True
 
     hat = joystick1.get_hat(0)
@@ -199,11 +248,13 @@ while running:
     if cobra != None:
         x, y, z, yaw = joyMotion1(x, y, z, yaw)
 
-    print(round(x, 2), round(y, 2), round(z, 2), round((yaw * 180 / 3.14), 2))
+    if xBox != None:
+        x, y, z, yaw = joyMotion2(x, y, z, yaw)
+
+    print(round(x, 2), round(y, 2), round(z, 2), round((yaw * 180 / 3.14), 2)) # Вывод координат (просто для удобства)
 
     # если координаты изменились, то отправляем их
     if new_command:
-        #print("newCommand")
         pioneer_mini.go_to_local_point(x = round(x, 2), y = round(y, 2), z = round(z, 2), yaw = round(yaw, 2))
         new_command = False
 
