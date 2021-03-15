@@ -5,8 +5,8 @@ class Joystick:
 
 
     def __init__(self):
-        self.joystick_count = pygame.joystick.get_count()
-        self.joyInd = [None, None, None] # массив хранения индексов джойстиков, PS4, cobra, xBox
+        self.joystick_count = pygame.joystick.get_count() # количество подключенных джойстиков
+        self.joyInd = [None, None, None] # массив хранения индексов джойстиков. Порядок храннения: PS4, cobra, xBox
 
         # Выдача джойстикам соответствующих индексов
         for i in range(self.joystick_count):
@@ -19,7 +19,7 @@ class Joystick:
             if joystick.get_name() == "Xbox 360 Controller":
                 self.joyInd[2] = i
 
-        self.joystick = [None, None, None]
+        self.joystick = [None, None, None] # Массив хрнения джойстиков. Порядок храннения: PS4, cobra, xBox
         for i in range(3):
             if self.joyInd[i] != None:
                 self.joystick[i] = pygame.joystick.Joystick(self.joyInd[i])  # создаем объект джойстик
@@ -28,6 +28,7 @@ class Joystick:
             else:
                 print("Джойстик не найден")
 
+        # скорость изменения координат
         self.increment_xy = float(0.1)
         self.increment_z = float(0.025)
         self.increment_deg = math.radians(float(8))
