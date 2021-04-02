@@ -3,9 +3,7 @@ import cv2
 import numpy as np
 import time
 import requests
-
-print('Инициализация пионера')
-pioneer_mini = Pioneer(logger=False)  # инициализируем пионера
+import pandas as pd
 
 
 def check(question):
@@ -18,35 +16,37 @@ def check(question):
         return False
 
 
+def startFunction(table, nameTest, string):
+    print("#################################")
+    table.append(nameTest)
+    print(string)
+
 ######################
 """Проверка моторов"""
 ######################
 def arm(pioneer, table):
-    table.append("Arm: ")
-    print('Проверка включения моторов')
+    startFunction(table, "Arm: ", "Проверка включения моторов")
 
     pioneer.arm()  # запуск моторов
 
     result = check("Запустились ли моторы?")
-    table.append(result)
+    table.append(str(result))
 
 
 def disarm(pioneer, table):
-    table.append("Disarm:")
-    print('Проверка выключения моторов')
+    startFunction(table, "Disarm: ", "Проверка выключения моторов")
 
     pioneer.disarm()  # остановка моторов
 
     result = check("Остановились ли моторы?")
-    table.append(result)
+    table.append(str(result))
 
 
 ##########################
 """Проверка светодиодов"""
 ##########################
 def led(pioneer, table):
-    table.append("Led: ")
-    print('Проверка работы светодиодов')
+    startFunction(table, "Led: ", "Проверка работы светодиодов")
 
     pioneer.led_control(r=255, g=0, b=0)
     time.sleep(2)
@@ -57,15 +57,14 @@ def led(pioneer, table):
     pioneer.led_control(r=0, g=0, b=0)
 
     result = check("Светодиоды меняли цвет?")
-    table.append(result)
+    table.append(str(result))
 
 
 #####################
 """Проверка камеры"""
 #####################
 def cam(pioneer, table):
-    table.append("Cam: ")
-    print('Проверка работы камеры')
+    startFunction(table, "Cam: ", "Проверка работы камеры")
     print('Нажмите ESC дял закрытия окна с видео')
 
     while True:
@@ -79,38 +78,39 @@ def cam(pioneer, table):
             break
 
     result = check("Появилось ли видео с камеры?")
-    table.append(result)
+    table.append(str(result))
 
 
 ##################################################
 """Проверка оптического потка, взлета и посадки"""
 ##################################################
 def takeoff(pioneer, table):
-    table.append("Takeoff, vertical: ")
-    print('Проверка оптического полета и взлета')
+    startFunction(table, "Takeoff: ", "Проверка оптического потока и взлета")
 
     pioneer.arm()
     pioneer.takeoff()
 
-    flight = check("Пионер взлетел и завис в воздухе?")
-    vertical = check("Пионер взлетел вертикально? (пионер должен находиться над точкой взлета)")
+    result1 = check("Пионер взлетел и завис в воздухе?")
+    table.append(str(result1))
 
-    result = [flight, vertical]
-    table.append(result)
+    table.append("Vertical: ")
+    result2 = check("Пионер взлетел вертикально? (пионер должен ~находиться над точкой взлета)")
+    table.append(str(result2))
 
 
 def land(pioneer, table):
-    table.append("land: ")
-    print('Проверка посадки')
+    startFunction(table, "land: ", "Проверка посадки")
+
     pioneer.land()
+    result = check("Пионер сел?")
+    table.append(str(result))
 
 
 #############################
 """Проверка полета в точку"""
 #############################
 def flight(pioneer, table):
-    table.append("Flight to point: ")
-    print('Проверка полета в точку')
+    startFunction(table, "Flight to point: ", "Проверка полета в точку")
 
     pioneer.go_to_local_point(x=0, y=1, z=1, yaw=0)
     p_r = False
@@ -124,9 +124,12 @@ def flight(pioneer, table):
         if deltaTime > 5:
             break
 
-    flight = check("Пионер полетел вперед на ~1 метр?")
-    result = [p_r, flight]
-    table.append(result)
+    pioneer.go_to_local_point(x=0, y=0, z=1, yaw=0)
+    result = check("Пионер пролетел вперед и назад ~1 метр?")
+    table.append(str(result))
+
+    table.append("P_r: ")
+    table.append(str(p_r))
 
 
 
@@ -134,15 +137,14 @@ def flight(pioneer, table):
 """Проверка запуска луа скрипта"""
 ##################################
 def luaScript(pioneer, table):
-    table.append("Lua script: ")
+    startFunction(table, "Lua script: ", "Проверка запуска луа скрипта для мигания светодиодами")
 
-    print("Проверка запуска луа скрипта для мигания светодиодами")
     pioneer.lua_script_control('Start')
 
     lua = check("Светодиоды мигают?")
     pioneer.lua_script_control('Stop')
     pioneer.led_control(r=0, g=0, b=0)
-    table.append(lua)
+    table.append(str(lua))
 
 
 ###########################################
@@ -150,9 +152,8 @@ def luaScript(pioneer, table):
 ##########################################
 # h, yaw, pitch, roll, mode
 def rcChannels(pioneer, table):
-    table.append("RC_Channels: ")
+    startFunction(table, "RC_Channels: ", "Проверка управления по RC каналу")
 
-    print("Проверка управления по RC каналу")
     h = 1500
     yaw = 1500
     pitch = 1500
@@ -176,21 +177,20 @@ def rcChannels(pioneer, table):
             yaw = 1700
         elif(deltaTime > 7):
             yaw = 1500
-            pioneer.land()
             break
 
         time.sleep(0.05)
 
-    rc = check("Коптер взлетел вверх и сделал оборот?")
-    table.append(rc)
+    result = check("Коптер взлетел вверх и сделал оборот?")
+    table.append(str(result))
 
 
 ######################################
 """Проверка работы сенора дистанции"""
 ######################################
 def distSensor(pioneer, table):
-    table.append("Dist sensor: ")
-    print("Проверка работы сенсора высоты")
+    startFunction(table, "Dist sensor: ", "Проверка работы датчика высоты")
+
     print("Возьмите коптер в руку и медленно поднимити его вертикально. В зависимости от высоты сетодиоды будут менять цвет")
     print(" >30см = красный цвет")
     print(" >50см = зеленый цвет")
@@ -226,36 +226,76 @@ def distSensor(pioneer, table):
             pioneer.led_control(r=r, g=g, b=b)
             startTime = time.time()
 
-    dist = check("Светодиоды меняли цвет в зависимости от высоты?")
-    table.append(dist)
+    result = check("Светодиоды меняли цвет в зависимости от высоты?")
+    table.append(str(result))
     pioneer.led_control(r=0, g=0, b=0)
 
 
 def disconnect(pioneer, table):
-    pass
+    startFunction(table, "DFailsafe: ", "Проверка посадки при потере сигнала")
+
+    pioneer.arm()
+    pioneer.takeoff()
+
+    print("Отключите wifi соединение с комптером, пока он в воздухе")
+    time.sleep(3)
+    result = check("Коптер совершил посадку?")
+    table.append(str(result))
+
 
 
 if __name__ == '__main__':
 
-    version = requests.get('http://192.168.4.1/info')
-    print("ВЕРСИЯ ТЕСТИРУЕМОЙ ПРОШИВКИ: ", version.text)
-    
-    print('Для положительного ответа нажмите введите "+" и нажмите enter')
+    print('Инициализация пионера\n')
+    pioneer_mini = Pioneer(logger=False)  # инициализируем пионера
+
+
     table = []
 
-    led(pioneer_mini, table)
-    distSensor(pioneer_mini, table)
-    cam(pioneer_mini, table)
+    version = requests.get('http://192.168.4.1/info')
+
+
+    print('Для положительного ответа нажмите введите "+" и нажмите enter')
+
+    #led(pioneer_mini, table)
+    #distSensor(pioneer_mini, table)
+    #cam(pioneer_mini, table)
     arm(pioneer_mini, table)
     disarm(pioneer_mini, table)
-    takeoff(pioneer_mini, table)
-    flight(pioneer_mini, table)
-    luaScript(pioneer_mini, table)
-    rcChannels(pioneer_mini, table)
+    #takeoff(pioneer_mini, table)
+    #flight(pioneer_mini, table)
+    #luaScript(pioneer_mini, table)
+    #rcChannels(pioneer_mini, table)
+    #disconnect(pioneer_mini, table)
+    #land(pioneer_mini, table)
+
+    print("########## РЕЗУЛЬТАТ ##########")
+
+    time = time.strftime("%d-%m-%Y %H:%M:%S", time.localtime())
+    print(time)
+
+
+    versionStr = str(version.text)
+    ind = versionStr.find(",")
+
+    print("{:25s} {:6s} ".format("ВЕРСИЯ ESP32:", str(versionStr[1:ind]) ) )
+    print("{:25s} {:6s} ".format("Версия автопилота: ", str(versionStr[ind + 2: len(versionStr) - 1]) ) )
 
 
     for i in range(0, len(table), 2):
-        print(table[i], table[i + 1])
+        print("{:25s} {:6s} ".format(table[i], table[i + 1]))
 
-    land(pioneer_mini)
-    print("конец теста")
+    resultTable = pd.DataFrame(columns=(0,1))
+
+    resultTable.loc[0] = "time", time
+    resultTable.loc[1] = "ESP32:", str(versionStr[1:ind])
+    resultTable.loc[2] = "autopilot: ", str(versionStr[ind + 2: len(versionStr) - 1])
+    line = 3
+    for i in range(0, len(table), 2):
+        str = []
+        str.append(table[i])
+        str.append(table[i+1])
+        resultTable.loc[line] = str
+        line = line + 1
+
+    resultTable.to_csv("./test.csv", index=None, header=False)
