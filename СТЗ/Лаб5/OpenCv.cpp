@@ -30,88 +30,26 @@ void drawCube(Mat inputImage, Mat cameraMatrix, Mat distCoeffs, Vec3d rvecs, Vec
 	pointCube[6] = Point3d(-len / 2, -len / 2, len);
 	pointCube[7] = Point3d(len / 2, -len / 2, len);
 
-
-
 	projectPoints(pointCube, rvecs, tvecs, cameraMatrix, distCoeffs, imagePoints);
 
-	vector<Point> back;
-	back.push_back(imagePoints[0]);
-	back.push_back(imagePoints[1]);
-	back.push_back(imagePoints[5]);
-	back.push_back(imagePoints[4]);
-	Vec3b backColor(0, 255, 0);
-
-	vector<Point> front;
-	front.push_back(imagePoints[3]);
-	front.push_back(imagePoints[2]);
-	front.push_back(imagePoints[6]);
-	front.push_back(imagePoints[7]);
-	Vec3b frontColor(0, 0, 255);
-
-	vector<Point> left;
-	left.push_back(imagePoints[1]);
-	left.push_back(imagePoints[2]);
-	left.push_back(imagePoints[6]);
-	left.push_back(imagePoints[5]);
-	Vec3b leftColor(125, 0, 0);
-
-	vector<Point> right;
-	right.push_back(imagePoints[3]);
-	right.push_back(imagePoints[0]);
-	right.push_back(imagePoints[4]);
-	right.push_back(imagePoints[7]);
-	Vec3b rightColor(0, 125, 0);
-
-	vector<Point> up;
-	up.push_back(imagePoints[4]);
-	up.push_back(imagePoints[5]);
-	up.push_back(imagePoints[6]);
-	up.push_back(imagePoints[7]);
-	Vec3b upColor(0, 0, 0);
-
-
-	if ((rvecs[2] > 0) && (rvecs[2] < 1))
-	{
-		fillConvexPoly(inputImage, front, frontColor, 8, 0);
-		fillConvexPoly(inputImage, left, leftColor, 8, 0);
-	}
-	if (rvecs[2] > 1)
-	{
-		fillConvexPoly(inputImage, back, backColor, 8, 0);
-		fillConvexPoly(inputImage, left, leftColor, 8, 0);
-	}
-	if ((rvecs[2] < 0) && (rvecs[2] > -1))
-	{
-		fillConvexPoly(inputImage, front, frontColor, 8, 0);
-		fillConvexPoly(inputImage, right, rightColor, 8, 0);
-	}
-	if (rvecs[2] < -1)
-	{
-		fillConvexPoly(inputImage, back, backColor, 8, 0);
-		fillConvexPoly(inputImage, right, rightColor, 8, 0);
-	}
-
-	fillConvexPoly(inputImage, up, upColor, 8, 0);
-
 	//// красные линии 
-	//for (int i = 0; i < 8; i += 2)
-	//{
-	//	line(inputImage, imagePoints[i], imagePoints[i + 1], Scalar(0, 0, 255), 4);
-	//}
+	for (int i = 0; i < 8; i += 2)
+	{
+		line(inputImage, imagePoints[i], imagePoints[i + 1], Scalar(0, 0, 255), 4);
+	}
 
-	//// зеленые линии 
-	//line(inputImage, imagePoints[1], imagePoints[2], Scalar(0, 255, 0), 4);
-	//line(inputImage, imagePoints[3], imagePoints[0], Scalar(0, 255, 0), 4);
-	//line(inputImage, imagePoints[5], imagePoints[6], Scalar(0, 255, 0), 4);
-	//line(inputImage, imagePoints[7], imagePoints[4], Scalar(0, 255, 0), 4);
+	// зеленые линии
+	line(inputImage, imagePoints[1], imagePoints[2], Scalar(0, 255, 0), 4);
+	line(inputImage, imagePoints[3], imagePoints[0], Scalar(0, 255, 0), 4);
+	line(inputImage, imagePoints[5], imagePoints[6], Scalar(0, 255, 0), 4);
+	line(inputImage, imagePoints[7], imagePoints[4], Scalar(0, 255, 0), 4);
 
-	//// синии линии
-	//for (int i = 0; i < 4; i++)
-	//{
-	//	line(inputImage, imagePoints[i], imagePoints[i + 4], Scalar(255, 0, 0), 4);
-	//}
+	// синии линии
+	for (int i = 0; i < 4; i++)
+	{
+		line(inputImage, imagePoints[i], imagePoints[i + 4], Scalar(255, 0, 0), 4);
+	}
 
-	cout << rvecs << "\n";
 }
 
 
@@ -140,8 +78,8 @@ int main()
 	//Калировка по аруко доске
 	//////////////////////////
 
-	Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_7X7_100);
-	Ptr<aruco::GridBoard> board = aruco::GridBoard::create(5, 7, 0.08f, 0.001, dictionary);
+	Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_7X7_100); //Объявление словаря
+	Ptr<aruco::GridBoard> board = aruco::GridBoard::create(5, 7, 0.08, 0.001, dictionary); //Генерация досик
 	Mat arucoBoard;
 	board->draw(Size(500, 600), arucoBoard, 10, 2);
 	//imwrite("arucoBoard.png", arucoBoard);
@@ -191,7 +129,7 @@ int main()
 	}
 
 	Mat cameraMatrix, distCoeffs;
-	vector<Mat> rvecs, tvecs;
+	vector<Mat> rvecs, tvecs; //Вектор поврота и вектор смещения
 	double arucoRepErr;
 	arucoRepErr = aruco::calibrateCameraAruco(allCornersConcatenated, allIdsConcatenated, markerCounterPerFrame, board, imgSize, cameraMatrix, distCoeffs, rvecs, tvecs, 0);
 
@@ -294,25 +232,6 @@ int main()
 	cap.set(CAP_PROP_FOURCC, fourcc);
 
 	Mat input_image;
-
-	//while (waitKey(1) != 27)
-	//{
-	//	cap.read(input_image);
-	//	if (!input_image.empty())
-	//	{
-	//		vector<vector<Point2f>> markerCorners, rejectedCandidates;
-	//		vector<int> markerIds;
-	//		aruco::detectMarkers(input_image, dictionary, markerCorners, markerIds, parameters, rejectedCandidates);
-	//		Mat outputImage = input_image.clone();
-	//		// если обнаружен хотя бы один маркер
-	//		if (markerIds.size() > 0) 
-	//		{
-	//			aruco::drawDetectedMarkers(outputImage, markerCorners, markerIds);
-	//		}
-	//		imshow("output", outputImage);
-	//	}
-	//}
-
 
 	while (waitKey(1) != 27)
 	{
